@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#e8443a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>La Cassa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Cassa giocattolo con scanner vero: in alto la fotocamera con il laser, sotto display, nastro e pulsante Paga */
+:root{
+  --bg:#ffe9c7; --body:#e8443a; --body-dark:#b8302a; --screen:#1f3b2c; --lcd:#9dff8a;
+  --belt:#3a3029; --ink:#2b2420; --green:#2fae5b; --blue:#2f7fe0; --paper:#fffdf6;
+  --font:"Arial Rounded MT Bold","Nunito","Trebuchet MS",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+[hidden]{display:none!important}
+.app{height:100%;display:flex;flex-direction:column;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+  max-width:700px;margin:0 auto}
+
+/* scanner */
+.scanner{position:relative;flex:1 1 auto;min-height:180px;border-radius:24px;overflow:hidden;background:#111;border:6px solid var(--body);box-shadow:0 6px 0 var(--body-dark)}
+.scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.aim{position:absolute;left:8%;right:8%;top:28%;bottom:28%;border:4px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.28)}
+.laser{position:absolute;left:4%;right:4%;top:50%;height:4px;background:#ff2a2a;box-shadow:0 0 14px 4px rgba(255,40,40,.75);animation:blink 1.1s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.flash{position:absolute;inset:0;background:#7dff6e;opacity:0;pointer-events:none}
+.flash.go{animation:flash .45s ease-out}
+@keyframes flash{from{opacity:.6}to{opacity:0}}
+.camerr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;padding:16px;font-size:1.05rem}
+.gear{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.35);color:#fff;font-size:1.4rem}
+
+/* cassa */
+.reg{background:var(--body);border-radius:24px;padding:10px;box-shadow:0 6px 0 var(--body-dark);display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+.lcd{background:var(--screen);color:var(--lcd);font-weight:700;border-radius:14px;padding:4px 16px;font-size:3rem;text-align:right;font-variant-numeric:tabular-nums;font-family:"Courier New",monospace}
+.belt{background:var(--belt);border-radius:14px;height:84px;padding:6px 8px;display:flex;gap:8px;overflow-x:auto;align-items:center}
+.belt .it{flex:0 0 auto;width:68px;height:68px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:2.4rem;overflow:hidden;animation:slide .35s ease-out}
+.belt .it img{width:100%;height:100%;object-fit:contain}
+@keyframes slide{from{transform:translateX(80px);opacity:0}}
+.row{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.big{font-family:var(--font);font-weight:700;font-size:1.6rem;border:0;border-radius:20px;padding:14px 8px;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.25);
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.big:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.big:disabled{opacity:.4}
+.pay{background:var(--green)}.undo{background:#7a6a5c}.blue{background:var(--blue)}
+
+/* schermate sopra */
+.overlay{position:fixed;inset:0;z-index:10;background:rgba(43,36,32,.65);display:flex;align-items:center;justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet{background:var(--paper);border-radius:28px;padding:20px;width:100%;max-width:460px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+.sheet .big{width:100%}
+.huge{font-size:5.5rem;line-height:1}
+.pimg{width:170px;height:170px;object-fit:contain;border-radius:18px;background:#fff}
+.say{font-size:1.9rem;font-weight:700}
+.price{font-size:2.6rem;font-weight:700;color:var(--body)}
+.hop{animation:hop .5s ease infinite alternate}
+@keyframes hop{to{transform:translateY(-12px) rotate(6deg)}}
+.cash{font-size:3rem;animation:give .7s ease-out}
+@keyframes give{from{transform:translateY(-50px) scale(.5);opacity:0}}
+.drawer{width:220px;height:30px;background:#3a3029;border-radius:0 0 12px 12px;animation:drawer .5s ease-out}
+@keyframes drawer{from{transform:scaleY(.1)}}
+
+/* avvio */
+.start{position:fixed;inset:0;z-index:20;background:var(--body);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;color:#fff;text-align:center}
+.start img{width:150px;height:150px;border-radius:32px;box-shadow:0 8px 0 var(--body-dark)}
+.start h1{font-size:2.6rem}
+.start .big{background:var(--green);font-size:2.2rem;padding:22px 40px}
+.start p{max-width:340px;opacity:.9;font-size:1rem}
+
+/* area genitori */
+.parent{text-align:left;align-items:stretch}
+.parent h2{font-size:1.4rem}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:48px 1fr 70px 40px;gap:8px;align-items:center}
+.prow img,.prow .em{width:48px;height:48px;border-radius:8px;object-fit:contain;background:#fff;font-size:2rem;display:flex;align-items:center;justify-content:center}
+.prow input{font:inherit;font-size:1rem;padding:8px;border:2px solid #e2cfae;border-radius:10px;width:100%;min-width:0}
+.prow button{border:0;background:none;font-size:1.3rem}
+.small{font-size:.9rem;color:#7a6a5c}
+.opt{display:flex;align-items:center;gap:10px;font-size:1.05rem}
+.opt input{width:24px;height:24px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scanner" id="scanner">
+    <video id="video" playsinline muted></video>
+    <div class="aim"></div><div class="laser"></div><div class="flash" id="flash"></div>
+    <div class="camerr" id="camerr" hidden></div>
+    <button class="gear" id="gear" aria-label="Area genitori (tieni premuto)">⚙</button>
+  </div>
+  <div class="reg">
+    <div class="lcd" id="total">0 €</div>
+    <div class="belt" id="belt"></div>
+    <div class="row">
+      <button class="big undo" id="undo" aria-label="Togli l'ultimo">↩</button>
+      <button class="big pay" id="pay">💶 Paga</button>
+    </div>
+  </div>
+</div>
+
+<div class="start" id="start">
+  <img src="icon-512.png" alt="">
+  <h1>La Cassa</h1>
+  <button class="big" id="go">▶ Apri</button>
+  <p>Passa il codice a barre dei prodotti davanti alla fotocamera.</p>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+
+<script src="zxing.min.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+let products=store.get("prodotti",{});   // codice -> {name, img, emoji, price}
+let settings=store.get("impostazioni",{voice:true,maxPrice:5});
+let cart=[], busy=false, lastCode="", lastTime=0;
+
+/* ---------- suoni ---------- */
+let ac;
+function ctx(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")ac.resume()}catch(e){}return ac}
+function tone(f,d,type="sine",when=0,vol=.18){const a=ctx();if(!a)return;try{
+  const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+when;o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
+function noise(dur,when,vol){const a=ctx();if(!a)return;try{
+  const len=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,len,a.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len)*(i%900<300?1:.3);
+  const s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter(),t=a.currentTime+when;
+  f.type="bandpass";f.frequency.value=1800;s.buffer=buf;g.gain.value=vol;s.connect(f).connect(g).connect(a.destination);s.start(t)}catch(e){}}
+const beep=()=>{tone(2900,.1);tone(2900,.08,"sine",.12)};
+const buzz=()=>tone(180,.25,"square",0,.08);
+const chaching=()=>{noise(.28,0,.45);[2093,2637,3136].forEach(f=>{tone(f,.8,"sine",.24,.1);tone(f*2.01,.45,"sine",.24,.05)});tone(4186,.6,"triangle",.32,.08)};
+const fanfare=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,"triangle",1+i*.14,.12));
+const vibe=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+const NUM=["zero","un","due","tre","quattro","cinque","sei","sette","otto","nove","dieci"];
+const euro=n=>n===1?"un euro":(NUM[n]||n)+" euro";
+function speak(t){if(!settings.voice)return;try{const u=new SpeechSynthesisUtterance(t);u.lang="it-IT";u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+
+/* ---------- prodotti dal codice a barre ---------- */
+const EMOJI=[["biscott","🍪"],["cookie","🍪"],["pasta","🍝"],["latte","🥛"],["milk","🥛"],["acqua","💧"],["water","💧"],["succh","🧃"],["juice","🧃"],
+  ["cioccolat","🍫"],["chocolate","🍫"],["formagg","🧀"],["cheese","🧀"],["pane","🍞"],["bread","🍞"],["caff","☕"],["coffee","☕"],["yogurt","🥣"],
+  ["merend","🧁"],["snack","🍿"],["frutt","🍎"],["fruit","🍎"],["verdur","🥕"],["vegetable","🥕"],["tonno","🐟"],["fish","🐟"],["pomodor","🍅"],["tomato","🍅"],
+  ["cereal","🥣"],["olio","🫒"],["oil","🫒"],["gelat","🍦"],["ice-cream","🍦"],["bevand","🥤"],["beverage","🥤"],["uov","🥚"],["egg","🥚"],["shampoo","🧴"],["sapon","🧼"],["soap","🧼"]];
+function emojiFor(text){text=(text||"").toLowerCase();for(const [k,e] of EMOJI)if(text.includes(k))return e;return "🛍️"}
+function priceFor(code){let s=0;for(const c of code)s+=+c||0;return 1+(s%Math.max(1,settings.maxPrice))}
+function shortName(n){n=(n||"").replace(/\s+/g," ").trim();const w=n.split(" ");return w.slice(0,3).join(" ").slice(0,28)}
+
+async function lookup(code){
+  if(products[code])return products[code];
+  let p=null;
+  const hosts=["world.openfoodfacts.org","world.openproductsfacts.org","world.openbeautyfacts.org"];
+  for(const h of hosts){
+    try{
+      const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),4500);
+      const r=await fetch(`https://${h}/api/v2/product/${code}.json?fields=product_name_it,product_name,generic_name_it,brands,image_front_small_url,image_front_url,categories_tags`,{signal:ctl.signal});
+      clearTimeout(t);
+      const j=await r.json();
+      if(j&&j.status===1&&j.product){
+        const pr=j.product, name=pr.product_name_it||pr.product_name||pr.generic_name_it||pr.brands||"";
+        if(name){p={name:shortName(name),img:pr.image_front_small_url||pr.image_front_url||"",emoji:emojiFor(name+" "+(pr.categories_tags||[]).join(" ")),price:priceFor(code)};break}
+      }
+    }catch(e){}
+  }
+  if(!p)p={name:"Prodotto",img:"",emoji:"📦",price:priceFor(code)};
+  products[code]=p;store.set("prodotti",products);
+  return p;
+}
+
+/* ---------- cassa ---------- */
+function total(){return cart.reduce((s,c)=>s+products[c].price,0)}
+function render(){
+  $("total").textContent=total()+" €";
+  $("belt").innerHTML=cart.map(c=>{const p=products[c];return `<div class="it">${p.img?`<img src="${p.img}" alt="">`:p.emoji}</div>`}).join("");
+  $("belt").scrollLeft=99999;
+  $("pay").disabled=!cart.length;$("undo").disabled=!cart.length;
+}
+async function onCode(code){
+  const now=Date.now();
+  if(busy||(code===lastCode&&now-lastTime<2500))return;
+  lastCode=code;lastTime=now;busy=true;
+  beep();vibe(80);$("flash").classList.remove("go");void $("flash").offsetWidth;$("flash").classList.add("go");
+  const p=await lookup(code);
+  cart.push(code);render();
+  showSheet(`${p.img?`<img class="pimg hop" src="${p.img}" alt="">`:`<span class="huge hop">${p.emoji}</span>`}
+    <p class="say">${esc(p.name)}</p><p class="price">${p.price} €</p>`);
+  speak(`${p.name}, ${euro(p.price)}`);
+  setTimeout(()=>{hideSheet();busy=false},2200);
+}
+function esc(t){return String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function showSheet(html){$("sheet").innerHTML=html;$("sheet").className="sheet";$("overlay").hidden=false}
+function hideSheet(){$("overlay").hidden=true}
+
+$("undo").onclick=()=>{cart.pop();buzz();render()};
+const CUSTOMERS=["👵","👴","👩","👨","🐻","🐰","🦊","🐶","🐱","🐸"];
+$("pay").onclick=()=>{
+  busy=true;const t=total(),face=CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)];
+  const bills=t<=5?"💶":t<=10?"💶💶":"💶💶💶";
+  showSheet(`<span class="huge">${face}</span><p class="say">Ecco ${t} €!</p><span class="cash">${bills}</span><div class="drawer"></div>
+    <span class="huge hop">⭐</span><p class="say">Brava!</p><button class="big pay" id="next">👋 Ciao!</button>`);
+  chaching();fanfare();vibe([60,60,60]);
+  setTimeout(()=>speak(`Ecco ${euro(t)}. Grazie, brava!`),450);
+  $("next").onclick=()=>{cart=[];render();hideSheet();busy=false};
+};
+
+/* ---------- fotocamera e lettura codici ---------- */
+let detector=null, zx=null, canvas=document.createElement("canvas"), cctx=canvas.getContext("2d",{willReadFrequently:true});
+async function setupReader(){
+  if("BarcodeDetector" in window){
+    try{const f=await BarcodeDetector.getSupportedFormats();
+      if(f.includes("ean_13")){detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128"].filter(x=>f.includes(x))});return}}catch(e){}
+  }
+  if(window.ZXing){
+    const hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    zx=new ZXing.MultiFormatReader();zx.setHints(hints);
+  }
+}
+async function scanFrame(){
+  const v=$("video");
+  if(!busy&&v.readyState>=2&&v.videoWidth){
+    try{
+      if(detector){
+        const codes=await detector.detect(v);
+        if(codes.length)onCode(codes[0].rawValue);
+      }else if(zx){
+        // si legge solo la fascia centrale, dove c'è il riquadro
+        const w=v.videoWidth,h=v.videoHeight,sh=Math.floor(h*.5),sy=Math.floor(h*.25),scale=Math.min(1,900/w);
+        canvas.width=Math.floor(w*scale);canvas.height=Math.floor(sh*scale);
+        cctx.drawImage(v,0,sy,w,sh,0,0,canvas.width,canvas.height);
+        try{
+          const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(canvas)));
+          const r=zx.decode(bmp);if(r)onCode(r.getText());
+        }catch(e){} finally{zx.reset()}
+      }
+    }catch(e){}
+  }
+  setTimeout(()=>requestAnimationFrame(scanFrame),detector?120:200);
+}
+async function startCamera(){
+  const err=$("camerr");err.hidden=true;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    err.innerHTML="La fotocamera non è disponibile.<br>Apri la cassa in Chrome o Safari, da un indirizzo https.";err.hidden=false;return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
+    const v=$("video");v.srcObject=stream;await v.play();
+    try{const track=stream.getVideoTracks()[0],cap=track.getCapabilities?track.getCapabilities():{};
+      if(cap.focusMode&&cap.focusMode.includes("continuous"))await track.applyConstraints({advanced:[{focusMode:"continuous"}]})}catch(e){}
+  }catch(e){
+    err.innerHTML=`Serve il permesso per la fotocamera.<button class="big blue" id="retry">📷 Riprova</button>`;err.hidden=false;
+    $("retry").onclick=startCamera;
+  }
+}
+document.addEventListener("visibilitychange",async()=>{
+  if(document.hidden||!$("start").hidden)return;
+  const v=$("video");if(v.srcObject&&v.paused)v.play().catch(()=>{});
+  try{if(navigator.wakeLock)await navigator.wakeLock.request("screen")}catch(e){}
+});
+
+$("go").onclick=async()=>{
+  ctx();speak("");
+  $("start").hidden=true;
+  try{if(navigator.wakeLock)await navigator.wakeLock.request("screen")}catch(e){}
+  await setupReader();await startCamera();scanFrame();
+};
+
+/* ---------- area genitori: tieni premuto l'ingranaggio ---------- */
+let holdT;
+$("gear").addEventListener("pointerdown",()=>{holdT=setTimeout(openParent,1200)});
+["pointerup","pointerleave","pointercancel"].forEach(ev=>$("gear").addEventListener(ev,()=>clearTimeout(holdT)));
+$("gear").addEventListener("contextmenu",e=>e.preventDefault());
+function openParent(){
+  busy=true;
+  const codes=Object.keys(products);
+  showSheet(`<h2>Area genitori</h2>
+    <label class="opt"><input type="checkbox" id="optVoice" ${settings.voice?"checked":""}> Voce che legge nome e prezzo</label>
+    <label class="opt">Prezzo massimo dei prodotti nuovi:
+      <select id="optMax" style="font:inherit;padding:6px;border-radius:8px">${[3,5,10].map(n=>`<option ${n===settings.maxPrice?"selected":""}>${n}</option>`).join("")}</select> €</label>
+    <p class="small">Prodotti scansionati (${codes.length}). Puoi cambiare nome e prezzo.</p>
+    <div class="plist">${codes.length?codes.map(c=>{const p=products[c];return `<div class="prow" data-c="${c}">
+      ${p.img?`<img src="${p.img}" alt="">`:`<span class="em">${p.emoji}</span>`}
+      <input value="${esc(p.name)}" data-f="name" aria-label="Nome"><input type="number" min="1" max="99" value="${p.price}" data-f="price" aria-label="Prezzo">
+      <button data-del aria-label="Elimina">🗑</button></div>`}).join(""):'<p class="small">Ancora nessuno: scansiona qualcosa!</p>'}</div>
+    <button class="big pay" id="pclose">Fatto</button>`);
+  $("sheet").classList.add("parent");
+  $("sheet").querySelectorAll(".prow").forEach(r=>{
+    const c=r.dataset.c;
+    r.querySelectorAll("input").forEach(i=>i.onchange=()=>{products[c][i.dataset.f]=i.dataset.f==="price"?Math.max(1,parseInt(i.value)||1):i.value.trim()||"Prodotto";store.set("prodotti",products);render()});
+    r.querySelector("[data-del]").onclick=()=>{cart=cart.filter(x=>x!==c);delete products[c];store.set("prodotti",products);render();r.remove()};
+  });
+  $("optVoice").onchange=e=>{settings.voice=e.target.checked;store.set("impostazioni",settings)};
+  $("optMax").onchange=e=>{settings.maxPrice=+e.target.value;store.set("impostazioni",settings)};
+  $("pclose").onclick=()=>{hideSheet();busy=false};
+}
+
+render();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
